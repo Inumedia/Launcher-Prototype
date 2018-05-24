@@ -17,9 +17,7 @@ namespace NXLIPC
             Host = new WebHostBuilder()
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseIISIntegration()
                 .UseStartup<Startup>()
-                .UseApplicationInsights()
                 .UseUrls("http://127.0.0.1:5311")
                 .Build();
 
