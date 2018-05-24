@@ -36,8 +36,8 @@ namespace API
                 {
                     string APIResponse = await APIResponseMessage.Content.ReadAsStringAsync();
                     int statusCode = (int)APIResponseMessage.StatusCode;
-                    if (statusCode > 500) throw new InvalidOperationException("Invalid response", new Exception(APIResponse));
-                    if (statusCode > 400) throw new InvalidOperationException("Invalid data presented", new Exception(APIResponse));
+                    if (statusCode >= 500) throw new InvalidOperationException("Invalid response", new Exception(APIResponse));
+                    if (statusCode >= 400) throw new InvalidOperationException("Invalid data presented", new Exception(APIResponse));
 
                     return JsonConvert.DeserializeObject<Login>(APIResponse);
                 }

@@ -224,8 +224,11 @@ namespace NXLDownloader
             Download(manifest, selected, hash, quiet);
         }
 
+        static Dictionary<string, Product> productCache = new Dictionary<string, Product>();
+
         public static Product GetProduct(string productId)
         {
+            if (productCache.ContainsKey(productId)) return productCache[productId];
             using (HttpClient client = new HttpClient())
             {
                 string productDetails;
@@ -236,7 +239,18 @@ namespace NXLDownloader
                     client.DefaultRequestHeaders.Add("Authorization", $"bearer {Convert.ToBase64String(Encoding.UTF8.GetBytes(AuthInfo.access_token))}");
                     productDetails = client.GetStringAsync($"https://api.nexon.io/products/{productId}").Result;
                 }
-                return JsonConvert.DeserializeObject<Product>(productDetails);
+                Product p = JsonConvert.DeserializeObject<Product>(productDetails);
+                if (Products == null) Products = new Product[] { p };
+                else {
+                    Product[] oldProducts = Products;
+                    Products = new Product[Products.Length + 1];
+                    for(var i = 0; i < oldProducts.Length; ++i)
+                        Products[i] = oldProducts[i];
+                    Products[oldProducts.Length] = p;
+                }
+
+                productCache.Add(productId, p);
+                return p;
             }
         }
 
@@ -259,7 +273,14 @@ namespace NXLDownloader
             {
                 Product selected = Products.First(c => c.ProductId.Equals(productId, StringComparison.CurrentCultureIgnoreCase));
                 string hash = selected.Details.Branches["win32"][branchName];
-                byte[] ManifestCompressed = client.GetByteArrayAsync($"https://download2.nexon.net/Game/nxl/games/{selected.ProductId}/{hash}").Result;
+                byte[] ManifestCompressed = null;
+
+                if (hash.StartsWith("http")) {
+                    ManifestCompressed = client.GetByteArrayAsync(hash).Result;
+                    hash = Encoding.ASCII.GetString(ManifestCompressed);
+                }
+
+                ManifestCompressed = client.GetByteArrayAsync($"https://download2.nexon.net/Game/nxl/games/{selected.ProductId}/{hash}").Result;
                 // Parse the manifest
                 Manifest manifest = Manifest.Parse(ManifestCompressed);
                 Download(manifest, selected, hash);
